@@ -1,0 +1,18 @@
+{
+  "name": "changelog-agent-demo",
+  "version": "0.8.0",
+  "description": "Demo app for weekly GitHub Agentic Workflow changelogs",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": {
+    "taskctl": "src/cli.js"
+  },
+  "scripts": {
+    "start": "node src/cli.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  }
+}
