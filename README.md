@@ -19,7 +19,7 @@ The same workflow accepts `workflow_dispatch` inputs so you can **backfill every
 | `.github/workflows/weekly-changelog.md` | Agentic workflow **source** (edit this) |
 | `.github/workflows/weekly-changelog.lock.yml` | Compiled Actions workflow (**generated**) |
 | `scripts/seed-history.sh` | Rebuilds fake 2026 commit/PR history |
-| `scripts/backfill-changelogs.sh` | Dispatches one run per Sunday window |
+| `scripts/backfill-changelogs.sh` | **Local Claude** backfill → Discussions (oldest→newest) |
 | `scripts/list-weeks.sh` | Lists week windows + merge counts |
 
 History is **synthetic**: merge commits look like `Merge pull request #N from demo/...` so the agent has PR-shaped signal even without real GitHub PRs.
@@ -55,6 +55,31 @@ Still required for a successful agent run:
   2. Add secret `COPILOT_GITHUB_TOKEN` (PAT with Copilot access) for individual billing
 - Confirm Actions are allowed for the account
 
+## Two paths: forward vs backfill
+
+| | **Ongoing (Copilot / gh-aw)** | **Backfill (local Claude)** |
+|--|------------------------------|-----------------------------|
+| When | Every Sunday + manual dispatch | Once, for 2026 → last week |
+| How | `.github/workflows/weekly-changelog.md` | `scripts/backfill-changelogs.sh` |
+| Model | Org-billed Copilot in Actions | `claude` CLI or `ANTHROPIC_API_KEY` |
+| Order | Natural (each week posts when due) | **Oldest → newest** so the list is chronological |
+
+### Can we backdate announcement timestamps?
+
+**No.** The GitHub Discussions API does not accept a custom `createdAt`. Every post
+gets “now” as its creation time.
+
+**How we still get chronological order (recent on top):**
+
+1. Backfill posts **oldest week first, newest last**.
+2. The Announcements list sorts by **created time, newest first**.
+3. After the loop finishes, the most recent week is on top; older weeks sit below.
+4. Titles are `[Changelog] Week of YYYY-MM-DD` so humans always know the real week.
+
+Do **not** post newest-first during backfill, or the list will be reversed.
+
+Optional extra: a single index discussion linking all weeks (not included by default).
+
 ## Quick start (this repo already seeded)
 
 ```bash
@@ -66,22 +91,33 @@ gh repo create changelog-agent-demo --public --source=. --remote=origin --push
 # 3. Confirm workflow is visible
 gh workflow list
 
-# 4. Dry-run backfill plan
+# 4. Plan weeks + dry-run backfill (no Claude/API calls that post)
 ./scripts/list-weeks.sh
 DRY_RUN=1 ./scripts/backfill-changelogs.sh
 
-# 5. Test a single week first (pick a busy one)
-gh workflow run weekly-changelog.md \
-  -f week_start=2026-03-29 \
-  -f week_end=2026-04-05
-
-gh run watch   # or: gh aw logs weekly-changelog
-
-# 6. Full backfill (one dispatch every 30s)
+# 5. Backfill with local Claude (needs `claude` on PATH or ANTHROPIC_API_KEY)
+#    Single week first:
+WEEK=2026-03-29 ./scripts/backfill-changelogs.sh
+#    Full range (default 2026-01-04 → last completed Sunday):
 ./scripts/backfill-changelogs.sh
 
-# 7. Going forward: the Sunday cron runs automatically
+# 6. Going forward: Sunday cron uses Copilot agentic workflow automatically
+#    Manual run for last week only:
+gh workflow run weekly-changelog.md
+gh run watch
 ```
+
+### Claude auth for backfill
+
+```bash
+# Option A — Claude Code / CLI
+# install from Anthropic, then ensure `claude` is on PATH
+
+# Option B — API key
+export ANTHROPIC_API_KEY=sk-ant-...
+# optional: MODEL=claude-sonnet-4-20250514
+```
+
 
 ## Editing the agent
 
