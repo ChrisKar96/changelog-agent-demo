@@ -40,6 +40,21 @@ History is **synthetic**: merge commits look like `Merge pull request #N from de
 
 > Personal accounts / no org billing: either move the repo under a qualifying org, or switch `engine` / auth to a PAT (`COPILOT_GITHUB_TOKEN`) or a third-party engine + API key. See [gh-aw billing](https://github.github.com/gh-aw/reference/billing/).
 
+## Live demo repo
+
+**https://github.com/ChrisKar96/changelog-agent-demo**
+
+Already done on GitHub:
+- Public repo pushed (`main`)
+- Discussions **enabled** (category **Announcements** / slug `announcements`)
+- Workflows registered: `Weekly Changelog Announcement`, `Agentic Maintenance`
+
+Still required for a successful agent run:
+- **Copilot billing**: this workflow uses `permissions.copilot-requests: write` (org-billed Copilot via `GITHUB_TOKEN`). On a **personal** repo, either:
+  1. Transfer the repo under an org with Copilot + policy **Allow use of Copilot CLI billed to the organization**, or
+  2. Add secret `COPILOT_GITHUB_TOKEN` (PAT with Copilot access) for individual billing
+- Confirm Actions are allowed for the account
+
 ## Quick start (this repo already seeded)
 
 ```bash
